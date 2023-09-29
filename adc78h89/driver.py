@@ -1,4 +1,5 @@
 from collections import deque
+from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import IntEnum
 from typing import ClassVar
@@ -16,26 +17,26 @@ class ADC78H89:
     class InputChannel(IntEnum):
         """The enum class for input channels."""
 
-        AIN1: int = 0
+        AIN1: int = 0b000
         """The first (default) input channel."""
-        AIN2: int = 1
+        AIN2: int = 0b001
         """The second input channel."""
-        AIN3: int = 2
+        AIN3: int = 0b010
         """The third input channel."""
-        AIN4: int = 3
+        AIN4: int = 0b011
         """The fourth input channel."""
-        AIN5: int = 4
+        AIN5: int = 0b100
         """The fifth input channel."""
-        AIN6: int = 5
+        AIN6: int = 0b101
         """The fifth input channel."""
-        AIN7: int = 6
+        AIN7: int = 0b110
         """The seventh input channel."""
-        GROUND: int = 7
+        GROUND: int = 0b111
         """The ground input channel."""
 
     SPI_MODE: ClassVar[int] = 3
     """The supported spi mode."""
-    MIN_SPI_MAX_SPEED: ClassVar[float] = 5e5
+    MIN_SPI_MAX_SPEED: ClassVar[float] = 5e4
     """The supported minimum spi maximum speed."""
     MAX_SPI_MAX_SPEED: ClassVar[float] = 8e6
     """The supported maximum spi maximum speed."""
@@ -47,14 +48,12 @@ class ADC78H89:
     """The input channel bit offset for control register bits."""
     REFERENCE_VOLTAGE: ClassVar[float] = 3.3
     """The reference voltage value (in volts)."""
-    DIVISOR: ClassVar[float] = 4096
+    DIVISOR: ClassVar[int] = 4096
     """The lsb width for ADC78H89."""
     DEFAULT_INPUT_CHANNEL: ClassVar[InputChannel] = InputChannel(0)
     """The default input channel."""
     spi: SPI
     """The SPI for the ADC device."""
-    previous_input_channel: InputChannel = DEFAULT_INPUT_CHANNEL
-    """The previous input channel."""
 
     def __post_init__(self) -> None:
         if self.spi.mode != self.SPI_MODE:
@@ -73,40 +72,44 @@ class ADC78H89:
         if self.spi.extra_flags:
             warn(f'unknown spi extra flags {self.spi.extra_flags}')
 
-    def get_voltage(self, next_input_channel: InputChannel) -> float:
-        """Return the voltage of the previous input channel.
+    def sample(
+            self,
+            input_channels: Iterable[InputChannel],
+    ) -> list[float]:
+        """Sample the voltages of the input channels.
 
-        :param next_input_channel: The next input channel.
-        :return: The voltage of the previous input channel.
+        :param input_channels: The input channels.
+        :return: The sampled voltages.
         """
-        self.previous_input_channel = next_input_channel
-        transmitted_data = [(next_input_channel << self.OFFSET), 0]
-        received_data = self.spi.transfer(transmitted_data)
-
-        assert len(received_data) == 2
-
-        raw_data = (
-            received_data[0] << self.SPI_WORD_BIT_COUNT | received_data[1]
-        )
-
-        return self.REFERENCE_VOLTAGE * raw_data / self.DIVISOR
-
-    def get_voltages(self) -> dict[InputChannel, float]:
-        """Return the voltages of all input channels.
-
-        :return: The voltages of all input channels.
-        """
-        input_channels = deque(self.InputChannel)
-
-        assert input_channels
-
-        self.get_voltage(input_channels[0])
-        input_channels.rotate(-1)
-
-        voltages = {}
+        transmitted_data = []
 
         for input_channel in input_channels:
-            previous_input_channel = self.previous_input_channel
-            voltages[previous_input_channel] = self.get_voltage(input_channel)
+            transmitted_data.append(input_channel << self.OFFSET)
+            transmitted_data.append(0)
+
+        received_data = self.spi.transfer(transmitted_data)
+        voltages = []
+
+        for i in range(0, len(received_data), 2):
+            raw_data = (
+                received_data[i]
+                << self.SPI_WORD_BIT_COUNT
+                | received_data[i + 1]
+            )
+
+            voltages.append(self.REFERENCE_VOLTAGE * raw_data / self.DIVISOR)
 
         return voltages
+
+    def sample_all(self) -> dict[InputChannel, float]:
+        """Sample the voltages of all input channels.
+
+        :return: The sampled voltages.
+        """
+        self.sample((self.InputChannel.GROUND,))
+
+        voltages = deque(self.sample(self.InputChannel))
+
+        voltages.rotate(-1)
+
+        return dict(zip(self.InputChannel, voltages))
