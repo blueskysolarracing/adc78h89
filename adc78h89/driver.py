@@ -1,5 +1,5 @@
-from collections import deque
 from collections.abc import Iterable
+from collections import deque
 from dataclasses import dataclass
 from enum import IntEnum
 from typing import ClassVar
