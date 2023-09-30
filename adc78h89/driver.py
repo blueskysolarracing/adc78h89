@@ -44,8 +44,8 @@ class ADC78H89:
     """The supported spi bit order."""
     SPI_WORD_BIT_COUNT: ClassVar[int] = 8
     """The supported spi number of bits per word."""
-    OFFSET: ClassVar[int] = 3
-    """The input channel bit offset for control register bits."""
+    INPUT_CHANNEL_BITS_OFFSET: ClassVar[int] = 3
+    """The input channel bits offset for control register bits."""
     REFERENCE_VOLTAGE: ClassVar[float] = 3.3
     """The reference voltage value (in volts)."""
     DIVISOR: ClassVar[int] = 4096
@@ -84,7 +84,9 @@ class ADC78H89:
         transmitted_data = []
 
         for input_channel in input_channels:
-            transmitted_data.append(input_channel << self.OFFSET)
+            transmitted_data.append(
+                input_channel << self.INPUT_CHANNEL_BITS_OFFSET,
+            )
             transmitted_data.append(0)
 
         received_data = self.spi.transfer(transmitted_data)

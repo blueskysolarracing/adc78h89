@@ -7,7 +7,7 @@ with open('README.rst', 'r') as file:
 
 setup(
     name='adc78h89',
-    version='0.0.0.dev2',
+    version='0.0.0.dev3',
     description='A Python driver for Texas Instruments ADC78H89 7-Channel, 500 KSPS, 12-Bit A/D Converter',
     long_description=long_description,
     long_description_content_type='text/x-rst',
