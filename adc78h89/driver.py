@@ -34,8 +34,8 @@ class ADC78H89:
         GROUND: int = 0b111
         """The ground input channel."""
 
-    SPI_MODE: ClassVar[int] = 3
-    """The supported spi mode."""
+    SPI_MODES: ClassVar[tuple[int, int]] = 0b00, 0b11
+    """The supported spi modes."""
     MIN_SPI_MAX_SPEED: ClassVar[float] = 5e4
     """The supported minimum spi maximum speed."""
     MAX_SPI_MAX_SPEED: ClassVar[float] = 8e6
@@ -56,7 +56,7 @@ class ADC78H89:
     """The SPI for the ADC device."""
 
     def __post_init__(self) -> None:
-        if self.spi.mode != self.SPI_MODE:
+        if self.spi.mode not in self.SPI_MODES:
             raise ValueError('unsupported spi mode')
         elif not (
                 self.MIN_SPI_MAX_SPEED

@@ -50,7 +50,7 @@ class ADC78H89TestCase(TestCase):
             return received_data
 
         mock_spi = MagicMock(
-            mode=ADC78H89.SPI_MODE,
+            mode=ADC78H89.SPI_MODES[-1],
             max_speed=ADC78H89.MIN_SPI_MAX_SPEED,
             bit_order=ADC78H89.SPI_BIT_ORDER,
             bits_per_word=ADC78H89.SPI_WORD_BIT_COUNT,
