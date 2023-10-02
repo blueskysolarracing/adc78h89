@@ -1,4 +1,3 @@
-from collections.abc import Iterable
 from collections import deque
 from dataclasses import dataclass
 from enum import IntEnum
@@ -72,10 +71,7 @@ class ADC78H89:
         if self.spi.extra_flags:
             warn(f'unknown spi extra flags {self.spi.extra_flags}')
 
-    def sample(
-            self,
-            input_channels: Iterable[InputChannel],
-    ) -> list[float]:
+    def sample(self, *input_channels: InputChannel) -> list[float]:
         """Sample the voltages of the input channels.
 
         :param input_channels: The input channels.
@@ -108,9 +104,9 @@ class ADC78H89:
 
         :return: The sampled voltages.
         """
-        self.sample((self.InputChannel.GROUND,))
+        self.sample(self.InputChannel.GROUND)
 
-        voltages = deque(self.sample(self.InputChannel))
+        voltages = deque(self.sample(*self.InputChannel))
 
         voltages.rotate(-1)
 
